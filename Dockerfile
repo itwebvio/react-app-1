@@ -1,11 +1,22 @@
 # Stage 1: Build
-FROM node:18-alpine as builder
+FROM node:18-alpine AS builder
 WORKDIR /app
+
+# Copy only package files first for caching
+COPY package*.json ./
+
+RUN npm install
+
+# Copy the rest of the source code
 COPY . .
-RUN npm install && npm run build
+
+RUN npm run build
 
 # Stage 2: Serve
-FROM nginx:alpine
-COPY --from=builder /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+FROM node:18-alpine
+WORKDIR /app
+
+COPY --from=builder /app /app
+
+EXPOSE 3000
+CMD ["node", "dist/server.js"]  # Adjust for your entry point
